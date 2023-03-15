@@ -1,0 +1,50 @@
+apiVersion: "nais.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: dp-ekstern-integrasjon
+  namespace: teamdagpenger
+  labels:
+    team: teamdagpenger
+
+spec:
+  image: {{ image }}
+  port: 8080
+  liveness:
+    path: /internal/liveness
+    initialDelay: 30
+    failureThreshold: 10
+  readiness:
+    path: /internal/readyness
+    initialDelay: 30
+    failureThreshold: 10
+  prometheus:
+    enabled: true
+    path: /internal/prometheus
+  replicas:
+    min: 2
+    max: 4
+    cpuThresholdPercentage: 50
+  resources:
+    limits:
+      memory: {{ limitsMemory }}
+      cpu: {{ limitsCpu }}
+    requests:
+      memory: {{ requestsMemory }}
+      cpu: {{ requestsCpu }}
+  maskinporten:
+    enabled: true
+    scopes:
+      exposes:
+        - name: "vedtak.read"
+          enabled: true
+          product: "dagpenger"
+          allowedIntegrations:
+            - maskinporten
+          atMaxAge: 120
+          consumers:
+            - orgno: "123456789"
+
+  ingresses:
+  {{#each ingresses as |url|}}
+     - {{ url }}
+         {{/each}}
