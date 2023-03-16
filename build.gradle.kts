@@ -35,6 +35,9 @@ dependencies {
     implementation("io.ktor:ktor-server-auth:$ktorVersion")
     implementation("io.ktor:ktor-server-auth-jwt:$ktorVersion")
     implementation("io.micrometer:micrometer-registry-prometheus:1.10.4")
+    implementation("ch.qos.logback:logback-classic:1.4.5")
+    implementation("io.ktor:ktor-server-call-logging:$ktorVersion")
+    implementation("io.ktor:ktor-server-call-logging-jvm:2.2.4")
 
     testImplementation(kotlin("test"))
 }
