@@ -1,4 +1,5 @@
 import com.auth0.jwk.JwkProviderBuilder
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
@@ -10,6 +11,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import java.net.URL
+import java.util.*
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
@@ -40,9 +42,18 @@ fun Application.module() {
             }
         }
         authenticate("maskinporten") {
-            route("/api/dagpenger/v1/vedtak") {
-                get {
-                    call.respond("Dette er et vedtak")
+            route("/api/dagpenger/v1/vedtak/innsyn") {
+                put {
+                    call.respond(HttpStatusCode.Accepted, UUID.randomUUID())
+                }
+                get("/{uuid}") {
+                    call.respond("""
+                        {
+                            "person_id": "12345678901",
+                            "virkning_fom": "2012-04-23",
+                            "virkning_tom: null
+                        }
+                    """.trimIndent())
                 }
             }
         }
