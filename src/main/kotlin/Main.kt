@@ -47,7 +47,7 @@ fun Application.module() {
                 call.respond("Ready")
             }
         }
-//        authenticate("maskinporten") {
+        authenticate("maskinporten") {
         route("/api/dagpenger/v1/vedtak/innsyn") {
             put {
                 call.respond(HttpStatusCode.Accepted, UUID.randomUUID().toString())
@@ -64,6 +64,6 @@ fun Application.module() {
                 )
             }
         }
-//        }
+        }
     }
 }
