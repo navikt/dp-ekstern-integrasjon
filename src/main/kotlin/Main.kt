@@ -42,7 +42,7 @@ fun Application.module() {
                 call.respond("Alive")
             }
         }
-        route("internal/readiness") {
+        route("/internal/readiness") {
             get {
                 call.respond("Ready")
             }
