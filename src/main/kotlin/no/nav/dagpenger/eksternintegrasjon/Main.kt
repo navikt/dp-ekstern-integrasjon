@@ -15,6 +15,7 @@ import kotlinx.serialization.json.jsonObject
 import org.slf4j.event.Level
 import java.net.URL
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 fun main() {
     embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = Application::module)
@@ -36,7 +37,10 @@ fun Application.module() {
 
     install(Authentication) {
         jwt {
-            verifier(JwkProviderBuilder(URL(jwks_uri)).build(), issuer)
+            verifier(JwkProviderBuilder(URL(jwks_uri))
+                .cached(10, 24, TimeUnit.HOURS)
+                .rateLimited(10, 1, TimeUnit.MINUTES)
+                .build(), issuer)
             validate { credential ->
                 JWTPrincipal(credential.payload)
             }
