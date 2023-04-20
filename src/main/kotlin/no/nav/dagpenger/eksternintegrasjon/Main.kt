@@ -8,6 +8,7 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.callloging.*
+import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
@@ -28,12 +29,21 @@ fun Application.module() {
         level = Level.INFO
     }
 
+    install(StatusPages) {
+        exception<Throwable> { call, cause ->
+            call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError)
+        }
+    }
 
     val wellKnownUrl = System.getenv().get("MASKINPORTEN_WELL_KNOWN_URL")
+
 
     val metadataJson = Json.parseToJsonElement(URL(wellKnownUrl).readText())
     val jwks_uri = metadataJson.jsonObject["jwks_uri"].toString().trim('"')
     val issuer = metadataJson.jsonObject["issuer"].toString().trim('"')
+
+    log.info("Well Known URL: $wellKnownUrl")
+    log.info("Jwks URI: $jwks_uri")
 
     install(Authentication) {
         jwt {
