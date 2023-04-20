@@ -1,11 +1,13 @@
+package no.nav.dagpenger.eksternintegrasjon
+
 import com.auth0.jwk.JwkProviderBuilder
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
+import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.callloging.*
-import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
@@ -14,7 +16,10 @@ import org.slf4j.event.Level
 import java.net.URL
 import java.util.*
 
-fun main(args: Array<String>): Unit = EngineMain.main(args)
+fun main() {
+    embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = Application::module)
+        .start(wait = true)
+}
 
 fun Application.module() {
 
@@ -30,8 +35,11 @@ fun Application.module() {
     val issuer = metadataJson.jsonObject["issuer"].toString().trim('"')
 
     install(Authentication) {
-        jwt("maskinporten") {
+        jwt {
             verifier(JwkProviderBuilder(URL(jwks_uri)).build(), issuer)
+            validate { credential ->
+                JWTPrincipal(credential.payload)
+            }
         }
     }
 
@@ -47,23 +55,29 @@ fun Application.module() {
                 call.respond("Ready")
             }
         }
-        authenticate("maskinporten") {
-        route("/api/dagpenger/v1/vedtak/innsyn") {
-            put {
-                call.respond(HttpStatusCode.Accepted, UUID.randomUUID().toString())
-            }
-            get("/{uuid}") {
-                call.respond(
-                    """
+        authenticate {
+            route("/api/dagpenger/v1/vedtak/innsyn") {
+                put {
+                    call.authentication.principal<JWTPrincipal>()?.let { principal -> {
+                        val scope = principal.payload.claims["scope"] ?: error("No scope provided")
+                        if (scope.equals("nav:dagpenger:vedtak.read")) {
+                            error("nav:dagpenger:vedtak.read not in scope")
+                        }
+                    }}
+                    call.respond(HttpStatusCode.Accepted, UUID.randomUUID().toString())
+                }
+                get("/{uuid}") {
+                    call.respond(
+                        """
                         {
                             "person_id": "12345678901",
                             "virkning_fom": "2012-04-23",
                             "virkning_tom: null
                         }
                     """.trimIndent()
-                )
+                    )
+                }
             }
-        }
         }
     }
 }
