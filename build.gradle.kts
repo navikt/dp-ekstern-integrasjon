@@ -1,6 +1,7 @@
 val ktor_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
+val hikaricp_version: String by project
 
 plugins {
     kotlin("jvm") version "1.8.10"
@@ -42,8 +43,10 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.4.5")
     implementation("com.google.guava:guava:30.1-jre")
     implementation("net.logstash.logback:logstash-logback-encoder:7.3")
-
-
+    implementation ("com.github.seratch:kotliquery:1.9.0")
+    implementation("com.zaxxer:HikariCP:$hikaricp_version")
+    implementation("org.flywaydb:flyway-core:9.8.2")
+    implementation("org.postgresql:postgresql:42.5.4")
 
     testImplementation(kotlin("test"))
 }

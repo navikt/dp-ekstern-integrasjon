@@ -1,0 +1,10 @@
+version: '3.7'
+services:
+  db:
+    image: "postgres:15-alpine"
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: "ei_user"
+      POSTGRES_PASSWORD: "ei_password"
+      POSTGRES_DB: "dp_ekstern_integrasjon"

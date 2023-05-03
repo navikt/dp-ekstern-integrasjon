@@ -1,29 +1,28 @@
 package no.nav.dagpenger.eksternintegrasjon
 
-import com.auth0.jwk.JwkProviderBuilder
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
-import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.callloging.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
+import no.nav.dagpenger.eksternintegrasjon.auth.installAuth
+import no.nav.dagpenger.eksternintegrasjon.db.InnsynDAO
+import no.nav.dagpenger.eksternintegrasjon.db.PostgresDataSource
+import no.nav.dagpenger.eksternintegrasjon.service.InnsynService
+import org.flywaydb.core.Flyway
 import org.slf4j.event.Level
-import java.net.URL
 import java.util.*
-import java.util.concurrent.TimeUnit
 
-fun main() {
-    embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = Application::module)
-        .start(wait = true)
-}
+fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.module() {
+
+    Flyway.configure().dataSource(PostgresDataSource.dataSource).load().migrate()
+    val innsynDAO = InnsynDAO(PostgresDataSource.dataSource, log)
+    val innsynService = InnsynService(innsynDAO)
 
     install(CallLogging) {
         level = Level.INFO
@@ -35,27 +34,7 @@ fun Application.module() {
         }
     }
 
-    val wellKnownUrl = System.getenv().get("MASKINPORTEN_WELL_KNOWN_URL")
-
-
-    val metadataJson = Json.parseToJsonElement(URL(wellKnownUrl).readText())
-    val jwks_uri = metadataJson.jsonObject["jwks_uri"].toString().trim('"')
-    val issuer = metadataJson.jsonObject["issuer"].toString().trim('"')
-
-    log.info("Well Known URL: $wellKnownUrl")
-    log.info("Jwks URI: $jwks_uri")
-
-    install(Authentication) {
-        jwt {
-            verifier(JwkProviderBuilder(URL(jwks_uri))
-                .cached(10, 24, TimeUnit.HOURS)
-                .rateLimited(10, 1, TimeUnit.MINUTES)
-                .build(), issuer)
-            validate { credential ->
-                JWTPrincipal(credential.payload)
-            }
-        }
-    }
+    installAuth("vedtak.nivå.1", "nav:dagpenger:vedtak.read")
 
     routing {
         // Internal API
@@ -69,27 +48,29 @@ fun Application.module() {
                 call.respond("Ready")
             }
         }
-        authenticate {
+        authenticate("vedtak.nivå.1") {
             route("/api/dagpenger/v1/vedtak/innsyn") {
                 put {
-                    call.authentication.principal<JWTPrincipal>()?.let { principal -> {
-                        val scope = principal.payload.claims["scope"] ?: error("No scope provided")
-                        if (scope.equals("nav:dagpenger:vedtak.read")) {
-                            error("nav:dagpenger:vedtak.read not in scope")
-                        }
-                    }}
-                    call.respond(HttpStatusCode.Accepted, UUID.randomUUID().toString())
+                    val uuid = innsynService.createInnsyn("test")
+                    call.respondText(uuid.toString(), status = HttpStatusCode.Accepted)
                 }
                 get("/{uuid}") {
-                    call.respond(
-                        """
-                        {
-                            "person_id": "12345678901",
-                            "virkning_fom": "2012-04-23",
-                            "virkning_tom: null
-                        }
-                    """.trimIndent()
-                    )
+
+                    val parameter = call.parameters["uuid"]
+                    val uuid: UUID
+                    try {
+                        uuid = UUID.fromString(parameter)
+                    } catch (e: Exception) {
+                        call.respond(HttpStatusCode.BadRequest)
+                        return@get
+                    }
+
+                    val innsyn = innsynService.getInnsyn(uuid)
+                    if (innsyn == null) {
+                        call.respond(HttpStatusCode.NotFound)
+                    } else {
+                        call.respondText(innsyn, ContentType.Application.Json)
+                    }
                 }
             }
         }
