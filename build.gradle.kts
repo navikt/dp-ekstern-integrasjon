@@ -39,6 +39,8 @@ dependencies {
     implementation("io.ktor:ktor-server-auth-jwt:$ktor_version")
     implementation("io.ktor:ktor-server-call-logging:$ktor_version")
     implementation("io.ktor:ktor-server-call-logging-jvm:$ktor_version")
+    implementation("io.ktor:ktor-client-java:$ktor_version")
+
     implementation("io.micrometer:micrometer-registry-prometheus:1.10.4")
     implementation("ch.qos.logback:logback-classic:1.4.5")
     implementation("com.google.guava:guava:30.1-jre")

@@ -17,11 +17,20 @@ fun Application.installAuth(realm: String, scope: String) {
     val issuer = metadataJson.jsonObject["issuer"].toString().trim('"')
 
     install(Authentication) {
-        jwt(realm) {
+        jwt("azureAD") {
             verifier(jwks_uri, issuer)
             validate { credential ->
                 if (!"\"$scope\"".equals(credential.payload.claims["scope"].toString())) {
-                    return@validate null;
+                    return@validate null
+                }
+                JWTPrincipal(credential.payload)
+            }
+        }
+        jwt("maskinporten") {
+            verifier(jwks_uri, issuer)
+            validate { credential ->
+                if (!"\"$scope\"".equals(credential.payload.claims["scope"].toString())) {
+                    return@validate null
                 }
                 JWTPrincipal(credential.payload)
             }

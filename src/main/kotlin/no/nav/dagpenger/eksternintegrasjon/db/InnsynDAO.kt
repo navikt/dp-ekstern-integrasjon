@@ -43,17 +43,46 @@ class InnsynDAO(private val dataSource: DataSource, private val log: Logger) {
         }
     }
 
-    fun hent(uuid: UUID): String? {
+    fun saveError(uuid: UUID, error: String) {
+        sessionOf(dataSource).use { session ->
+            session.run(
+                queryOf(
+                    """
+                        UPDATE innsyn set 
+                            data = :data::jsonb,
+                            status = 'FEIL'
+                        where innsyn_ref = :uuid
+                    """.trimIndent(),
+                    mapOf(
+                        "uuid" to uuid,
+                        "data" to error
+                    )
+                ).asUpdate
+            )
+        }
 
+    }
+
+    fun hent(uuid: UUID): String? {
         val query = queryOf(
             """
-                        SELECT data FROM innsyn
-                            where innsyn_ref = :?
-                    """.trimIndent(),
+                SELECT data FROM innsyn
+                where innsyn_ref = ?
+            """.trimIndent(),
             uuid
-        ).map { row -> row.string("data") }
+        ).map { row ->
+            row.let {
+                row.string("data")
+            }
+        }
 
-        return sessionOf(dataSource).run(query.asSingle)
+        val session = sessionOf(dataSource)
 
+        try {
+            return session.run(query.asSingle)
+        } catch (e: Exception) {
+            log.error(e)
+        }
+        return null
     }
 }

@@ -1,13 +1,17 @@
 package no.nav.dagpenger.eksternintegrasjon
 
+import io.ktor.client.*
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.callloging.*
 import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import no.nav.dagpenger.eksternintegrasjon.auth.installAuth
 import no.nav.dagpenger.eksternintegrasjon.db.InnsynDAO
 import no.nav.dagpenger.eksternintegrasjon.db.PostgresDataSource
@@ -22,7 +26,8 @@ fun Application.module() {
 
     Flyway.configure().dataSource(PostgresDataSource.dataSource).load().migrate()
     val innsynDAO = InnsynDAO(PostgresDataSource.dataSource, log)
-    val innsynService = InnsynService(innsynDAO)
+    val httpClient = HttpClient(io.ktor.client.engine.java.Java)
+    val innsynService = InnsynService(innsynDAO, environment)
 
     install(CallLogging) {
         level = Level.INFO
@@ -48,11 +53,14 @@ fun Application.module() {
                 call.respond("Ready")
             }
         }
-        authenticate("vedtak.nivå.1") {
+        authenticate("azureAD", "maskinporten") {
             route("/api/dagpenger/v1/vedtak/innsyn") {
                 put {
-                    val uuid = innsynService.createInnsyn("test")
-                    call.respondText(uuid.toString(), status = HttpStatusCode.Accepted)
+                    val body = call.receiveText()
+                    Json.parseToJsonElement(body).jsonObject.get("fnr")?.let {
+                        val uuid = innsynService.createInnsyn("test", it.toString().trim('"'))
+                        call.respondText(uuid.toString(), status = HttpStatusCode.Accepted)
+                    } ?: call.respond(HttpStatusCode.BadRequest)
                 }
                 get("/{uuid}") {
 
