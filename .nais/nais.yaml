@@ -44,6 +44,18 @@ spec:
           consumers:
             - name: NAV
               orgno: "889640782"
+  gcp:
+    sqlInstances:
+      - type: POSTGRES_14 # IF This is changed, all data will be lost. Read on nais.io how to upgrade
+        diskAutoresize: true
+        cascadingDelete: true
+        pointInTimeRecovery: true
+        maintenance:
+          day: 7
+          hour: 23
+        databases:
+          - name: dp-ekstern-integrasjon
+            envVarPrefix: DB
   ingresses:
   {{#each ingresses as |url|}}
      - {{ url }}
