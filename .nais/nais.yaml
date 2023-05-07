@@ -31,7 +31,7 @@ spec:
   accessPolicy:
     outbound:
       external:
-        - dp-iverksett.intern.dev.nav.no
+        - "dp-iverksett.intern.dev.nav.no"
   maskinporten:
     enabled: true
     scopes:
