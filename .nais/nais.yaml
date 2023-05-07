@@ -17,9 +17,6 @@ spec:
     path: /internal/readyness
     initialDelay: 30
     failureThreshold: 10
-  prometheus:
-    enabled: true
-    path: /internal/prometheus
   replicas:
     min: 2
     max: 4
@@ -31,6 +28,10 @@ spec:
     requests:
       memory: {{ requestsMemory }}
       cpu: {{ requestsCpu }}
+  accessPolicy:
+    outbound:
+      external:
+        - dp-iverksett.intern.dev.nav.no
   maskinporten:
     enabled: true
     scopes:
