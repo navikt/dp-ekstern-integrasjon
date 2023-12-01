@@ -1,6 +1,5 @@
-limitsMemory: 1024Mi
-limitsCpu: 1000m
+limitsMemory: 512Mi
 requestsMemory: 256Mi
-requestsCpu: 500m
+requestsCpu: 50m
 ingresses:
   - https://dp-ekstern-integrasjon.intern.dev.nav.no

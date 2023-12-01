@@ -20,11 +20,9 @@ spec:
   replicas:
     min: 2
     max: 4
-    cpuThresholdPercentage: 50
   resources:
     limits:
       memory: {{ limitsMemory }}
-      cpu: {{ limitsCpu }}
     requests:
       memory: {{ requestsMemory }}
       cpu: {{ requestsCpu }}
